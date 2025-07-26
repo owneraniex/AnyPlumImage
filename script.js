@@ -1,127 +1,82 @@
-async function convertImages() {
-  const input = document.getElementById('imageInput');
-  const format = document.getElementById('formatSelect').value;
-  const output = document.getElementById('output');
+const input = document.getElementById('imageInput');
+const formatSelect = document.getElementById('formatSelect');
+const qualityRange = document.getElementById('qualityRange');
+const qualityValue = document.getElementById('qualityValue');
+const maxWidthInput = document.getElementById('maxWidth');
+const maxHeightInput = document.getElementById('maxHeight');
+const convertBtn = document.getElementById('convertBtn');
+const output = document.getElementById('output');
 
-  output.innerHTML = ''; // clear previous results
+qualityRange.addEventListener('input', () => {
+  qualityValue.textContent = qualityRange.value;
+});
 
+convertBtn.addEventListener('click', async () => {
+  output.innerHTML = '';
   if (!input.files.length) {
-    alert('Please select at least one image.');
+    alert('Please select one or more images!');
     return;
   }
 
+  const format = formatSelect.value;
+  const quality = qualityRange.value / 100;
+  const maxWidth = parseInt(maxWidthInput.value) || 1024;
+  const maxHeight = parseInt(maxHeightInput.value) || 1024;
+
   for (const file of input.files) {
     try {
-      const imgURL = URL.createObjectURL(file);
-      const img = await loadImage(imgURL);
+      const img = await loadImage(URL.createObjectURL(file));
 
-      // Create canvas and draw image to it
-      const canvas = document.createElement('canvas');
-
-      // Optional: Reduce resolution by half (can be enhanced to user input)
-      const maxWidth = 1024; // max width allowed
-      const maxHeight = 1024; // max height allowed
-
+      // Calculate target size (maintain aspect ratio)
       let targetWidth = img.width;
       let targetHeight = img.height;
 
-      // Downscale if larger than max dimensions
-      if (img.width > maxWidth || img.height > maxHeight) {
-        const ratio = Math.min(maxWidth / img.width, maxHeight / img.height);
-        targetWidth = Math.floor(img.width * ratio);
-        targetHeight = Math.floor(img.height * ratio);
+      if (targetWidth > maxWidth || targetHeight > maxHeight) {
+        const ratio = Math.min(maxWidth / targetWidth, maxHeight / targetHeight);
+        targetWidth = Math.floor(targetWidth * ratio);
+        targetHeight = Math.floor(targetHeight * ratio);
       }
 
+      // Draw to canvas
+      const canvas = document.createElement('canvas');
       canvas.width = targetWidth;
       canvas.height = targetHeight;
-
       const ctx = canvas.getContext('2d');
       ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
 
-      // Quality setting for JPEG/WebP (0 to 1), adjust as needed
-      const quality = 0.85;
-
-      // Convert to selected format
+      // Select mime type
       let mimeType = 'image/png';
-      switch (format) {
-        case 'jpeg':
-          mimeType = 'image/jpeg';
-          break;
-        case 'webp':
-          mimeType = 'image/webp';
-          break;
-        case 'bmp':
-          mimeType = 'image/bmp'; // browser support is limited, fallback to PNG if needed
-          break;
-        case 'gif':
-          mimeType = 'image/gif'; // gif conversion not supported via canvas, fallback needed
-          break;
-        case 'tiff':
-          // TIFF is not supported by canvas.toBlob(), fallback needed
-          mimeType = 'image/png';
-          break;
-        case 'avif':
-          mimeType = 'image/avif'; // very limited browser support
-          break;
-        default:
-          mimeType = 'image/png';
-      }
+      if (format === 'jpeg') mimeType = 'image/jpeg';
+      else if (format === 'webp') mimeType = 'image/webp';
+      else if (format === 'bmp') mimeType = 'image/bmp';
+      else if (format === 'gif') mimeType = 'image/gif'; // fallback below
+      else if (format === 'tiff') mimeType = 'image/png'; // fallback, not supported on canvas
+      else if (format === 'avif') mimeType = 'image/avif';
 
-      // Get blob from canvas
-      const blob = await new Promise(resolve => {
-        if (mimeType === 'image/gif' || mimeType === 'image/tiff' || mimeType === 'image/bmp') {
-          // canvas cannot create gif, tiff or bmp - fallback to PNG
+      // canvas.toBlob fallback for unsupported types
+      const blob = await new Promise((resolve) => {
+        if (['image/gif', 'image/tiff', 'image/bmp'].includes(mimeType)) {
+          // fallback to png for unsupported types
           canvas.toBlob(resolve, 'image/png', quality);
         } else {
           canvas.toBlob(resolve, mimeType, quality);
         }
       });
 
-      const convertedUrl = URL.createObjectURL(blob);
+      const url = URL.createObjectURL(blob);
+      const ext = (mimeType === 'image/png' && ['tiff', 'bmp', 'gif'].includes(format)) ? 'png' : format;
 
-      // Create download link
-      const a = document.createElement('a');
-      a.href = convertedUrl;
-
-      // Change extension to selected format (fallback to png if needed)
-      let ext = format;
-      if (format === 'tiff' || format === 'gif' || format === 'bmp') ext = 'png';
-
-      a.download = file.name.replace(/\.[^/.]+$/, '') + '.' + ext;
-      a.textContent = `Download ${a.download}`;
-      a.style.display = 'block';
-      a.style.marginBottom = '1rem';
-
-      // Show preview image
-      const preview = document.createElement('img');
-      preview.src = convertedUrl;
-      preview.style.maxWidth = '200px';
-      preview.style.display = 'block';
-      preview.style.marginBottom = '0.5rem';
-
-      // Append preview + link
+      // Create preview & download link
       const container = document.createElement('div');
-      container.style.marginBottom = '2rem';
-      container.appendChild(preview);
-      container.appendChild(a);
+      container.classList.add('converted-image');
 
-      output.appendChild(container);
+      const preview = document.createElement('img');
+      preview.src = url;
+      preview.classList.add('preview');
+      preview.alt = file.name;
 
-      // Release object URL after some time to save memory
-      setTimeout(() => URL.revokeObjectURL(convertedUrl), 60000);
-
-      URL.revokeObjectURL(imgURL);
-    } catch (err) {
-      console.error('Error converting', file.name, err);
-    }
-  }
-}
-
-function loadImage(src) {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => resolve(img);
-    img.onerror = reject;
-    img.src = src;
-  });
-}
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = file.name.replace(/\.[^/.]+$/, '') + '.' + ext;
+      link.textContent = `Download ${link.download}`;
+      link.classList
