@@ -11,12 +11,26 @@ qualityRange.addEventListener('input', () => {
   qualityValue.textContent = qualityRange.value;
 });
 
+// Disable button while converting
+function toggleButton(state) {
+  convertBtn.disabled = !state;
+  if (!state) {
+    convertBtn.textContent = 'Converting...';
+    convertBtn.style.cursor = 'wait';
+  } else {
+    convertBtn.textContent = 'Convert Images';
+    convertBtn.style.cursor = 'pointer';
+  }
+}
+
 convertBtn.addEventListener('click', async () => {
   output.innerHTML = '';
   if (!input.files.length) {
     alert('Please select one or more images!');
     return;
   }
+
+  toggleButton(false);
 
   const format = formatSelect.value;
   const quality = qualityRange.value / 100;
@@ -44,24 +58,25 @@ convertBtn.addEventListener('click', async () => {
       const ctx = canvas.getContext('2d');
       ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
 
-      // Select mime type
+      // Determine mime type for canvas.toBlob
       let mimeType = 'image/png';
       if (format === 'jpeg') mimeType = 'image/jpeg';
       else if (format === 'webp') mimeType = 'image/webp';
       else if (format === 'bmp') mimeType = 'image/bmp';
       else if (format === 'gif') mimeType = 'image/gif'; // fallback below
-      else if (format === 'tiff') mimeType = 'image/png'; // fallback, not supported on canvas
+      else if (format === 'tiff') mimeType = 'image/png'; // fallback, canvas no support
       else if (format === 'avif') mimeType = 'image/avif';
 
       // canvas.toBlob fallback for unsupported types
       const blob = await new Promise((resolve) => {
         if (['image/gif', 'image/tiff', 'image/bmp'].includes(mimeType)) {
-          // fallback to png for unsupported types
           canvas.toBlob(resolve, 'image/png', quality);
         } else {
           canvas.toBlob(resolve, mimeType, quality);
         }
       });
+
+      if (!blob) throw new Error('Image conversion failed.');
 
       const url = URL.createObjectURL(blob);
       const ext = (mimeType === 'image/png' && ['tiff', 'bmp', 'gif'].includes(format)) ? 'png' : format;
@@ -73,31 +88,30 @@ convertBtn.addEventListener('click', async () => {
       const preview = document.createElement('img');
       preview.src = url;
       preview.classList.add('preview');
-      preview.alt = `Converted image preview for ${file.name}`;
+      preview.alt = `Converted preview of ${file.name}`;
 
       const link = document.createElement('a');
       link.href = url;
       link.download = file.name.replace(/\.[^/.]+$/, '') + '.' + ext;
       link.textContent = `Download ${link.download}`;
-      link.setAttribute('role', 'button');
       link.classList.add('download-link');
-      link.style.display = 'inline-block';
-      link.style.marginTop = '0.5rem';
+      link.setAttribute('role', 'button');
+      link.setAttribute('tabindex', '0');
 
+      // Append
       container.appendChild(preview);
       container.appendChild(link);
       output.appendChild(container);
 
-      // Revoke object URLs after 2 minutes to free memory
-      setTimeout(() => {
-        URL.revokeObjectURL(url);
-      }, 120000);
-
+      // Clean up URL after 2 mins
+      setTimeout(() => URL.revokeObjectURL(url), 120000);
     } catch (err) {
       console.error('Error converting image:', err);
-      alert(`Failed to convert image ${file.name}. Please try again.`);
+      alert(`Failed to convert image "${file.name}". Please try again.`);
     }
   }
+
+  toggleButton(true);
 });
 
 function loadImage(src) {
