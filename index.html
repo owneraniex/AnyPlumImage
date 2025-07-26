@@ -23,12 +23,13 @@
   </header>
   
   <main>
-    <section class="converter">
+    <section class="converter" aria-label="Image conversion form">
       <label for="imageInput">Select Images:</label>
-      <input type="file" id="imageInput" multiple accept="image/*" />
+      <input type="file" id="imageInput" multiple accept="image/*" aria-describedby="imageInputHelp" />
+      <small id="imageInputHelp" class="visually-hidden">Choose one or more image files to convert</small>
       
       <label for="formatSelect">Convert To:</label>
-      <select id="formatSelect">
+      <select id="formatSelect" aria-describedby="formatSelectHelp">
         <option value="png">PNG</option>
         <option value="jpeg">JPEG</option>
         <option value="webp">WEBP</option>
@@ -37,22 +38,25 @@
         <option value="tiff">TIFF</option>
         <option value="avif">AVIF</option>
       </select>
+      <small id="formatSelectHelp" class="visually-hidden">Choose output image format</small>
 
       <label for="qualityRange">Quality (JPEG/WebP only): <span id="qualityValue">85</span>%</label>
-      <input type="range" id="qualityRange" min="10" max="100" value="85" />
+      <input type="range" id="qualityRange" min="10" max="100" value="85" aria-valuemin="10" aria-valuemax="100" aria-valuenow="85" />
       
       <label for="maxWidth">Max Width (px):</label>
-      <input type="number" id="maxWidth" min="1" max="5000" value="1024" />
+      <input type="number" id="maxWidth" min="1" max="5000" value="1024" aria-describedby="maxWidthHelp" />
+      <small id="maxWidthHelp" class="visually-hidden">Maximum width of the output image in pixels</small>
       
       <label for="maxHeight">Max Height (px):</label>
-      <input type="number" id="maxHeight" min="1" max="5000" value="1024" />
+      <input type="number" id="maxHeight" min="1" max="5000" value="1024" aria-describedby="maxHeightHelp" />
+      <small id="maxHeightHelp" class="visually-hidden">Maximum height of the output image in pixels</small>
       
-      <button id="convertBtn">Convert Images</button>
+      <button id="convertBtn" type="button">Convert Images</button>
     </section>
 
-    <section id="output"></section>
+    <section id="output" aria-live="polite" aria-label="Converted images output"></section>
 
-    <section class="ad">
+    <section class="ad" role="region" aria-label="Advertisement information">
       <p>🔒 100% client-side — Your images never leave your device.</p>
       <p>🚀 Interested in advertising here? Contact us.</p>
     </section>
