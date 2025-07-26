@@ -1,156 +1,110 @@
-/* Visually hidden for accessibility */
-.visually-hidden {
-  position: absolute !important;
-  height: 1px; width: 1px;
-  overflow: hidden;
-  clip: rect(1px,1px,1px,1px);
-  white-space: nowrap; /* added line */
-}
+const input = document.getElementById('imageInput');
+const formatSelect = document.getElementById('formatSelect');
+const qualityRange = document.getElementById('qualityRange');
+const qualityValue = document.getElementById('qualityValue');
+const maxWidthInput = document.getElementById('maxWidth');
+const maxHeightInput = document.getElementById('maxHeight');
+const convertBtn = document.getElementById('convertBtn');
+const output = document.getElementById('output');
 
-/* Reset */
-* {
-  box-sizing: border-box;
-}
+qualityRange.addEventListener('input', () => {
+  qualityValue.textContent = qualityRange.value;
+});
 
-body {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background: #f9fafb;
-  color: #222;
-  margin: 0;
-  padding: 0 1rem;
-  line-height: 1.5;
-}
-
-header {
-  background-color: #4f46e5;
-  color: white;
-  padding: 2rem 1rem;
-  text-align: center;
-  box-shadow: 0 4px 8px rgb(79 70 229 / 0.3);
-}
-
-header h1 {
-  margin: 0 0 0.5rem 0;
-  font-weight: 700;
-  font-size: 2.5rem;
-}
-
-header p {
-  margin: 0;
-  font-size: 1.2rem;
-  font-weight: 500;
-}
-
-main {
-  max-width: 720px;
-  margin: 2rem auto 4rem auto;
-  background: white;
-  border-radius: 10px;
-  box-shadow: 0 4px 10px rgb(0 0 0 / 0.1);
-  padding: 2rem;
-}
-
-.converter label {
-  display: block;
-  margin-top: 1rem;
-  font-weight: 600;
-  font-size: 1rem;
-  color: #222222;
-}
-
-.converter input[type="file"],
-.converter select,
-.converter input[type="number"],
-.converter input[type="range"] {
-  width: 100%;
-  padding: 0.4rem 0.6rem;
-  margin-top: 0.25rem;
-  font-size: 1rem;
-  border: 1.5px solid #ddd;
-  border-radius: 6px;
-  transition: border-color 0.3s ease;
-}
-
-.converter input[type="file"]:focus,
-.converter select:focus,
-.converter input[type="number"]:focus,
-.converter input[type="range"]:focus {
-  outline: none;
-  border-color: #4f46e5;
-  box-shadow: 0 0 5px #4f46e5;
-}
-
-#convertBtn {
-  margin-top: 2rem;
-  background-color: #4f46e5;
-  color: white;
-  border: none;
-  font-weight: 700;
-  font-size: 1.2rem;
-  padding: 0.75rem 1rem;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-  width: 100%;
-}
-
-#convertBtn:hover,
-#convertBtn:focus {
-  background-color: #4338ca;
-  outline: none;
-}
-
-#output > div {
-  margin-top: 1.5rem;
-  border: 1px solid #ddd;
-  padding: 1rem;
-  border-radius: 8px;
-  box-shadow: 0 2px 6px rgb(0 0 0 / 0.05);
-}
-
-#output img.preview {
-  max-width: 200px;
-  max-height: 150px;
-  display: block;
-  margin: 0 auto 1rem auto;
-}
-
-.ad {
-  margin-top: 3rem;
-  font-size: 0.95rem;
-  color: #333333;
-  background-color: #f0f0f0;
-  padding: 0.75rem;
-  border-radius: 6px;
-  text-align: center;
-}
-
-.ad a {
-  color: #1a0dab;
-  text-decoration: underline;
-}
-
-.ad a:hover,
-.ad a:focus {
-  color: #0c008c;
-}
-
-footer {
-  text-align: center;
-  padding: 1.5rem 1rem;
-  font-size: 0.9rem;
-  color: #555;
-  border-top: 1px solid #eee;
-  background-color: #fafafa;
-}
-
-/* Responsive */
-@media (max-width: 480px) {
-  header h1 {
-    font-size: 1.8rem;
+convertBtn.addEventListener('click', async () => {
+  output.innerHTML = '';
+  if (!input.files.length) {
+    alert('Please select one or more images!');
+    return;
   }
 
-  main {
-    padding: 1.5rem 1rem;
+  const format = formatSelect.value;
+  const quality = qualityRange.value / 100;
+  const maxWidth = parseInt(maxWidthInput.value) || 1024;
+  const maxHeight = parseInt(maxHeightInput.value) || 1024;
+
+  for (const file of input.files) {
+    try {
+      const img = await loadImage(URL.createObjectURL(file));
+
+      // Calculate target size (maintain aspect ratio)
+      let targetWidth = img.width;
+      let targetHeight = img.height;
+
+      if (targetWidth > maxWidth || targetHeight > maxHeight) {
+        const ratio = Math.min(maxWidth / targetWidth, maxHeight / targetHeight);
+        targetWidth = Math.floor(targetWidth * ratio);
+        targetHeight = Math.floor(targetHeight * ratio);
+      }
+
+      // Draw to canvas
+      const canvas = document.createElement('canvas');
+      canvas.width = targetWidth;
+      canvas.height = targetHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+
+      // Select mime type
+      let mimeType = 'image/png';
+      if (format === 'jpeg') mimeType = 'image/jpeg';
+      else if (format === 'webp') mimeType = 'image/webp';
+      else if (format === 'bmp') mimeType = 'image/bmp';
+      else if (format === 'gif') mimeType = 'image/gif'; // fallback below
+      else if (format === 'tiff') mimeType = 'image/png'; // fallback, not supported on canvas
+      else if (format === 'avif') mimeType = 'image/avif';
+
+      // canvas.toBlob fallback for unsupported types
+      const blob = await new Promise((resolve) => {
+        if (['image/gif', 'image/tiff', 'image/bmp'].includes(mimeType)) {
+          // fallback to png for unsupported types
+          canvas.toBlob(resolve, 'image/png', quality);
+        } else {
+          canvas.toBlob(resolve, mimeType, quality);
+        }
+      });
+
+      const url = URL.createObjectURL(blob);
+      const ext = (mimeType === 'image/png' && ['tiff', 'bmp', 'gif'].includes(format)) ? 'png' : format;
+
+      // Create preview & download link container
+      const container = document.createElement('div');
+      container.classList.add('converted-image');
+
+      const preview = document.createElement('img');
+      preview.src = url;
+      preview.classList.add('preview');
+      preview.alt = `Converted image preview for ${file.name}`;
+
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = file.name.replace(/\.[^/.]+$/, '') + '.' + ext;
+      link.textContent = `Download ${link.download}`;
+      link.setAttribute('role', 'button');
+      link.classList.add('download-link');
+      link.style.display = 'inline-block';
+      link.style.marginTop = '0.5rem';
+
+      container.appendChild(preview);
+      container.appendChild(link);
+      output.appendChild(container);
+
+      // Revoke object URLs after 2 minutes to free memory
+      setTimeout(() => {
+        URL.revokeObjectURL(url);
+      }, 120000);
+
+    } catch (err) {
+      console.error('Error converting image:', err);
+      alert(`Failed to convert image ${file.name}. Please try again.`);
+    }
   }
+});
+
+function loadImage(src) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error('Image load error'));
+    img.src = src;
+  });
 }
