@@ -2,21 +2,66 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AnyPlumImage - Convert & Optimize</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AnyPlumImage – Free Online Image Converter & Resizer</title>
+  <meta name="description" content="Convert and resize images (PNG, JPG, WebP, GIF, BMP, TIFF) easily in your browser. Fast, private, client-side image converter with quality & resolution control." />
+  <meta name="keywords" content="image converter, image resizer, png to jpg, jpg to webp, webp to png, client-side, image quality, image compression, free converter" />
+  <meta name="author" content="Nayeem" />
+  
+  <!-- Open Graph -->
+  <meta property="og:title" content="AnyPlumImage – Free Online Image Converter" />
+  <meta property="og:description" content="Convert and resize images easily in your browser. No upload, no quality loss." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://owneraniex.github.io/AnyPlumImage/" />
+  
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div class="container">
-    <h1>🎨 AnyPlumImage</h1>
-    <p>Convert your images to 15+ formats with zero quality loss, right in your browser.</p>
-    <div class="upload-box" id="drop-area">
-      <input type="file" id="fileElem" accept="image/*" multiple>
-      <label for="fileElem">Click or Drag & Drop images here</label>
-    </div>
-    <div id="preview"></div>
-    <div id="ad-slot">🔒 Ad: Your support keeps us free.</div>
-  </div>
-  <script src="script.js"></script>
+  <header>
+    <h1>AnyPlumImage</h1>
+    <p>Free Online Image Converter & Resizer — No Upload, No Quality Loss</p>
+  </header>
+  
+  <main>
+    <section class="converter">
+      <label for="imageInput">Select Images:</label>
+      <input type="file" id="imageInput" multiple accept="image/*" />
+      
+      <label for="formatSelect">Convert To:</label>
+      <select id="formatSelect">
+        <option value="png">PNG</option>
+        <option value="jpeg">JPEG</option>
+        <option value="webp">WEBP</option>
+        <option value="bmp">BMP</option>
+        <option value="gif">GIF</option>
+        <option value="tiff">TIFF</option>
+        <option value="avif">AVIF</option>
+      </select>
+
+      <label for="qualityRange">Quality (JPEG/WebP only): <span id="qualityValue">85</span>%</label>
+      <input type="range" id="qualityRange" min="10" max="100" value="85" />
+      
+      <label for="maxWidth">Max Width (px):</label>
+      <input type="number" id="maxWidth" min="1" max="5000" value="1024" />
+      
+      <label for="maxHeight">Max Height (px):</label>
+      <input type="number" id="maxHeight" min="1" max="5000" value="1024" />
+      
+      <button id="convertBtn">Convert Images</button>
+    </section>
+
+    <section id="output"></section>
+
+    <section class="ad">
+      <p>🔒 100% client-side — Your images never leave your device.</p>
+      <p>🚀 Interested in advertising here? Contact us.</p>
+    </section>
+  </main>
+
+  <footer>
+    <p>&copy; 2025 AnyPlumImage by Nayeem. Free and privacy-focused.</p>
+  </footer>
+
+  <script src="script.js" defer></script>
 </body>
 </html>
